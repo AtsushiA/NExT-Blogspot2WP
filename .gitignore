@@ -1,0 +1,23 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.code-workspace
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Composer
+vendor/
+
+# ビルド成果物
+*.zip
+dist/
+
+# PHP
+*.log
