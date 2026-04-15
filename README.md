@@ -152,6 +152,8 @@ NExT-blogspot2WP/
 | `<p>` | `core/paragraph` |
 | `<h1>`〜`<h6>` | `core/heading` |
 | `<img>` / `<figure>` | `core/image` |
+| `<a>` + `<img>`（画像リンク） | `core/image`（linkDestination=media） |
+| Blogger 画像テーブル（`<table>` + `tr-caption`） | `core/image`（キャプション付き） |
 | `<blockquote>` | `core/quote` |
 | `<pre>` / `<code>` | `core/code` |
 | `<ul>` | `core/list`（unordered） |

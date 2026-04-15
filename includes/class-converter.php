@@ -110,6 +110,9 @@ class NExT_Blogspot2WP_Converter {
 			case 'img':
 				return $this->convert_image_node( $node );
 
+			case 'a':
+				return $this->convert_anchor( $node );
+
 			case 'figure':
 				return $this->convert_figure( $node );
 
@@ -196,6 +199,38 @@ class NExT_Blogspot2WP_Converter {
 		return $this->convert_image_from_src( $src, $node->getAttribute( 'alt' ) );
 	}
 
+	/**
+	 * <a> タグを変換する。
+	 * img を含む場合は core/image（linkDestination=media）に変換し、
+	 * Blogger の元 URL をインポート済み WordPress メディア URL に差し替える。
+	 *
+	 * @param DOMElement $node
+	 * @return string
+	 */
+	private function convert_anchor( DOMElement $node ) {
+		$imgs = $node->getElementsByTagName( 'img' );
+
+		if ( $imgs->length > 0 ) {
+			$img = $imgs->item( 0 );
+			$src = $img->getAttribute( 'src' );
+			$alt = $img->getAttribute( 'alt' );
+			if ( $src ) {
+				return $this->convert_image_from_src( $src, $alt, '', true );
+			}
+		}
+
+		// img を含まない <a> はインライン扱いで paragraph に格納する.
+		$href  = $node->getAttribute( 'href' );
+		$inner = $this->get_inner_html( $node );
+		if ( trim( wp_strip_all_tags( $inner ) ) === '' ) {
+			return '';
+		}
+		$link = $href
+			? '<a href="' . esc_url( $href ) . '">' . $inner . '</a>'
+			: $inner;
+		return $this->wrap_block( 'core/paragraph', array(), '<p>' . $link . '</p>' );
+	}
+
 	private function convert_figure( DOMElement $node ) {
 		// figure 内の img を探す
 		$imgs = $node->getElementsByTagName( 'img' );
@@ -221,12 +256,13 @@ class NExT_Blogspot2WP_Converter {
 	/**
 	 * 画像 URL から core/image ブロックを生成する。
 	 *
-	 * @param string $src
-	 * @param string $alt
-	 * @param string $caption
+	 * @param string $src           画像 URL.
+	 * @param string $alt           alt テキスト.
+	 * @param string $caption       キャプション.
+	 * @param bool   $link_to_media true のとき WordPress メディア URL にリンクする（linkDestination=media）.
 	 * @return string
 	 */
-	private function convert_image_from_src( $src, $alt = '', $caption = '' ) {
+	private function convert_image_from_src( $src, $alt = '', $caption = '', $link_to_media = false ) {
 		if ( ! $src ) {
 			return '';
 		}
@@ -234,17 +270,34 @@ class NExT_Blogspot2WP_Converter {
 		$normalized_src = $this->image_handler->normalize_url( $src );
 		$attachment_id  = $this->image_handler->import( $normalized_src, $this->post_id, $this->post_date );
 
+		// WordPress 6.x core/image: sizeSlug, linkDestination, figure の size-{slug} クラスが必要.
+		$size_slug        = 'full';
+		$link_destination = $link_to_media ? 'media' : 'none';
+
 		if ( is_wp_error( $attachment_id ) ) {
-			$img = '<img src="' . esc_url( $src ) . '" alt="' . esc_attr( $alt ) . '"/>';
-			$attrs = array();
+			$img      = '<img src="' . esc_url( $src ) . '" alt="' . esc_attr( $alt ) . '"/>';
+			$attrs    = array(
+				'sizeSlug'        => $size_slug,
+				'linkDestination' => $link_destination,
+			);
+			$img_html = $link_to_media
+				? '<a href="' . esc_url( $src ) . '">' . $img . '</a>'
+				: $img;
 		} else {
-			$img_url = wp_get_attachment_url( $attachment_id );
-			$img     = '<img src="' . esc_url( $img_url ) . '" alt="' . esc_attr( $alt ) . '"'
+			$img_url  = wp_get_attachment_url( $attachment_id );
+			$img      = '<img src="' . esc_url( $img_url ) . '" alt="' . esc_attr( $alt ) . '"'
 				. ' class="wp-image-' . (int) $attachment_id . '"/>';
-			$attrs = array( 'id' => $attachment_id );
+			$attrs    = array(
+				'id'              => $attachment_id,
+				'sizeSlug'        => $size_slug,
+				'linkDestination' => $link_destination,
+			);
+			$img_html = $link_to_media
+				? '<a href="' . esc_url( $img_url ) . '">' . $img . '</a>'
+				: $img;
 		}
 
-		$figure = '<figure class="wp-block-image">' . $img;
+		$figure = '<figure class="wp-block-image size-' . esc_attr( $size_slug ) . '">' . $img_html;
 		if ( $caption ) {
 			$figure .= '<figcaption class="wp-element-caption">' . esc_html( $caption ) . '</figcaption>';
 		}
@@ -294,11 +347,104 @@ class NExT_Blogspot2WP_Converter {
 	}
 
 	private function convert_table( DOMElement $node ) {
+		// Blogger の画像テーブルパターン検出.
+		// <table><tbody><tr><td><a><img></a></td></tr><tr><td class="tr-caption">...</td></tr></tbody></table>
+		$blogger_image = $this->extract_blogger_image_table( $node );
+		if ( null !== $blogger_image ) {
+			return $this->convert_image_from_src(
+				$blogger_image['src'],
+				$blogger_image['alt'],
+				$blogger_image['caption'],
+				$blogger_image['link_to_media']
+			);
+		}
+
 		$inner = $this->get_inner_html( $node );
 		return $this->wrap_block(
 			'core/table',
 			array(),
 			'<figure class="wp-block-table"><table>' . $inner . '</table></figure>'
+		);
+	}
+
+	/**
+	 * Blogger の画像テーブル（<a imageanchor><img></a> + tr-caption）を検出して情報を返す。
+	 * 該当しない場合は null を返す。
+	 *
+	 * @param DOMElement $node <table> 要素
+	 * @return array|null { src, alt, caption, link_to_media }
+	 */
+	private function extract_blogger_image_table( DOMElement $node ) {
+		// tbody > tr を収集（tbody がない場合は table 直下の tr）.
+		$rows = array();
+		foreach ( $node->childNodes as $child ) { // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+			if ( XML_ELEMENT_NODE !== $child->nodeType ) { // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+				continue;
+			}
+			$child_tag = strtolower( $child->nodeName ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+			if ( 'tbody' === $child_tag || 'thead' === $child_tag ) {
+				foreach ( $child->childNodes as $tr ) { // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+					if ( XML_ELEMENT_NODE === $tr->nodeType && 'tr' === strtolower( $tr->nodeName ) ) { // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+						$rows[] = $tr;
+					}
+				}
+			} elseif ( 'tr' === $child_tag ) {
+				$rows[] = $child;
+			}
+		}
+
+		// 行数は 1〜2 行のみ対象（画像行 + オプションのキャプション行）.
+		if ( 1 > count( $rows ) || 2 < count( $rows ) ) {
+			return null;
+		}
+
+		// 1行目の td から img を探す.
+		$first_row = $rows[0];
+		$tds       = $first_row->getElementsByTagName( 'td' );
+		if ( 0 === $tds->length ) {
+			return null;
+		}
+		$first_td = $tds->item( 0 );
+
+		// <a imageanchor><img></a> または <img> を直接探す.
+		$src           = '';
+		$alt           = '';
+		$link_to_media = false;
+
+		$anchors = $first_td->getElementsByTagName( 'a' );
+		$imgs    = $first_td->getElementsByTagName( 'img' );
+
+		if ( $anchors->length > 0 && $imgs->length > 0 ) {
+			$src           = $imgs->item( 0 )->getAttribute( 'src' );
+			$alt           = $imgs->item( 0 )->getAttribute( 'alt' );
+			$link_to_media = true;
+		} elseif ( $imgs->length > 0 ) {
+			$src = $imgs->item( 0 )->getAttribute( 'src' );
+			$alt = $imgs->item( 0 )->getAttribute( 'alt' );
+		}
+
+		if ( ! $src ) {
+			return null;
+		}
+
+		// 2行目があれば tr-caption クラスの td をキャプションとして取得.
+		$caption = '';
+		if ( count( $rows ) === 2 ) {
+			$caption_tds = $rows[1]->getElementsByTagName( 'td' );
+			if ( $caption_tds->length > 0 ) {
+				$caption_td    = $caption_tds->item( 0 );
+				$caption_class = $caption_td->getAttribute( 'class' );
+				if ( false !== strpos( $caption_class, 'tr-caption' ) ) {
+					$caption = trim( $caption_td->textContent ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+				}
+			}
+		}
+
+		return array(
+			'src'           => $src,
+			'alt'           => $alt,
+			'caption'       => $caption,
+			'link_to_media' => $link_to_media,
 		);
 	}
 
