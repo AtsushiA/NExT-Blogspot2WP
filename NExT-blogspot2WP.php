@@ -3,7 +3,7 @@
  * Plugin Name:       NExT Blogspot2WP
  * Plugin URI:        https://github.com/AtsushiA/NExT-Blogspot2WP
  * Description:       BlogspotブログをWordPressの投稿としてインポートするWP-CLIプラグイン
- * Version:           1.0.2
+ * Version:           1.0.3
  * Requires at least: 6.0
  * Requires PHP:      8.3
  * Author:            NExT-Season.net
@@ -15,7 +15,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'NEXT_BLOGSPOT2WP_VERSION', '1.0.2' );
+define( 'NEXT_BLOGSPOT2WP_VERSION', '1.0.3' );
 define( 'NEXT_BLOGSPOT2WP_DIR', plugin_dir_path( __FILE__ ) );
 
 require_once NEXT_BLOGSPOT2WP_DIR . 'includes/class-blogger-feed.php';
