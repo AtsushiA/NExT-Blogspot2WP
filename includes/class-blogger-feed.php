@@ -58,12 +58,13 @@ class NExT_Blogspot2WP_Blogger_Feed {
 				}
 			}
 
-			$start_index += count( $posts );
+			$post_count   = count( $posts );
+			$start_index += $post_count;
 
 			// レート制限対策
 			usleep( 200000 ); // 200ms
 
-		} while ( count( $posts ) > 0 && $start_index <= $total );
+		} while ( $post_count > 0 && $start_index <= $total );
 
 		return $all_posts;
 	}
@@ -96,7 +97,7 @@ class NExT_Blogspot2WP_Blogger_Feed {
 		}
 
 		$status_code = wp_remote_retrieve_response_code( $response );
-		if ( $status_code !== 200 ) {
+		if ( 200 !== $status_code ) {
 			return new WP_Error(
 				'feed_http_error',
 				sprintf( 'Blogger Feed が HTTP %d を返しました。URL: %s', $status_code, $feed_url )
@@ -176,16 +177,16 @@ class NExT_Blogspot2WP_Blogger_Feed {
 		}
 
 		return array(
-			'id'           => $id,
-			'title'        => $title,
-			'content'      => $content,
-			'published'    => $published,
-			'updated'      => $updated,
-			'link'         => $link,
-			'slug'         => $slug,
-			'labels'       => $labels,
-			'cover_image'  => $cover_image,
-			'author_name'  => $author_name,
+			'id'          => $id,
+			'title'       => $title,
+			'content'     => $content,
+			'published'   => $published,
+			'updated'     => $updated,
+			'link'        => $link,
+			'slug'        => $slug,
+			'labels'      => $labels,
+			'cover_image' => $cover_image,
+			'author_name' => $author_name,
 		);
 	}
 

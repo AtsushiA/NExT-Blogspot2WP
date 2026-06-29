@@ -79,8 +79,8 @@ class NExT_Blogspot2WP_Image {
 			array(
 				'post_type'      => 'attachment',
 				'post_status'    => 'inherit',
-				'meta_key'       => '_blogger_original_url',
-				'meta_value'     => $url,
+				'meta_key'       => '_blogger_original_url', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value'     => $url, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 				'posts_per_page' => 1,
 				'fields'         => 'ids',
 			)

@@ -61,15 +61,15 @@ class NExT_Blogspot2WP_Importer {
 			)
 		);
 
-		$blogger_id  = isset( $post['id'] )          ? $post['id']          : '';
-		$title       = isset( $post['title'] )        ? $post['title']       : '(無題)';
-		$slug        = isset( $post['slug'] )         ? $post['slug']        : '';
-		$content     = isset( $post['content'] )      ? $post['content']     : '';
-		$published   = isset( $post['published'] )    ? $post['published']   : '';
-		$updated     = isset( $post['updated'] )      ? $post['updated']     : $published;
-		$cover_image = isset( $post['cover_image'] )  ? $post['cover_image'] : '';
-		$labels      = isset( $post['labels'] )       ? $post['labels']      : array();
-		$source_url  = isset( $post['link'] )         ? $post['link']        : '';
+		$blogger_id  = isset( $post['id'] ) ? $post['id'] : '';
+		$title       = isset( $post['title'] ) ? $post['title'] : '(無題)';
+		$slug        = isset( $post['slug'] ) ? $post['slug'] : '';
+		$content     = isset( $post['content'] ) ? $post['content'] : '';
+		$published   = isset( $post['published'] ) ? $post['published'] : '';
+		$updated     = isset( $post['updated'] ) ? $post['updated'] : $published;
+		$cover_image = isset( $post['cover_image'] ) ? $post['cover_image'] : '';
+		$labels      = isset( $post['labels'] ) ? $post['labels'] : array();
+		$source_url  = isset( $post['link'] ) ? $post['link'] : '';
 
 		// 日付を WP 形式（Y-m-d H:i:s）に変換
 		$post_date     = $this->convert_date( $published );
@@ -80,7 +80,7 @@ class NExT_Blogspot2WP_Importer {
 		// 重複チェック
 		$existing_id = $this->find_existing( $blogger_id, $slug );
 		if ( $existing_id && ! $options['force'] ) {
-			$this->stats['skipped']++;
+			++$this->stats['skipped'];
 			return array(
 				'result'  => 'skipped',
 				'post_id' => $existing_id,
@@ -93,7 +93,7 @@ class NExT_Blogspot2WP_Importer {
 			$action = $existing_id ? '更新予定' : 'インポート予定';
 			return array(
 				'result'  => 'dry_run',
-				'post_id' => $existing_id ?: 0,
+				'post_id' => $existing_id ? $existing_id : 0,
 				'message' => "[DRY RUN] {$action}: {$title} ({$post_date})",
 			);
 		}
@@ -120,13 +120,13 @@ class NExT_Blogspot2WP_Importer {
 
 		if ( $existing_id ) {
 			$post_data['ID'] = $existing_id;
-			$post_id = wp_update_post( $post_data, true );
+			$post_id         = wp_update_post( $post_data, true );
 		} else {
 			$post_id = wp_insert_post( $post_data, true );
 		}
 
 		if ( is_wp_error( $post_id ) ) {
-			$this->stats['errors']++;
+			++$this->stats['errors'];
 			return array(
 				'result'  => 'error',
 				'post_id' => 0,
@@ -155,14 +155,19 @@ class NExT_Blogspot2WP_Importer {
 
 			// 本文変換（post_id 確定済みなので画像も正しく紐付けられる）。
 			$post_content = $this->converter->convert( $content, $post_id, $post_date );
-			wp_update_post( array( 'ID' => $post_id, 'post_content' => $post_content ) );
+			wp_update_post(
+				array(
+					'ID'           => $post_id,
+					'post_content' => $post_content,
+				)
+			);
 		}
 
 		if ( $existing_id ) {
-			$this->stats['updated']++;
+			++$this->stats['updated'];
 			$result = 'updated';
 		} else {
-			$this->stats['imported']++;
+			++$this->stats['imported'];
 			$result = 'imported';
 		}
 
@@ -194,7 +199,7 @@ class NExT_Blogspot2WP_Importer {
 	 * @param string $taxonomy 'category' または 'tag'（post_tag）
 	 */
 	private function assign_labels( $post_id, $labels, $taxonomy = 'category' ) {
-		$wp_taxonomy = ( $taxonomy === 'tag' ) ? 'post_tag' : 'category';
+		$wp_taxonomy = ( 'tag' === $taxonomy ) ? 'post_tag' : 'category';
 		$term_ids    = array();
 
 		foreach ( $labels as $label_name ) {
@@ -212,7 +217,7 @@ class NExT_Blogspot2WP_Importer {
 			return;
 		}
 
-		if ( $wp_taxonomy === 'category' ) {
+		if ( 'category' === $wp_taxonomy ) {
 			wp_set_post_categories( $post_id, $term_ids );
 		} else {
 			wp_set_post_tags( $post_id, $term_ids, false );
@@ -299,8 +304,8 @@ class NExT_Blogspot2WP_Importer {
 				array(
 					'post_type'      => 'post',
 					'post_status'    => 'any',
-					'meta_key'       => '_blogger_post_id',
-					'meta_value'     => $blogger_id,
+					'meta_key'       => '_blogger_post_id', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+					'meta_value'     => $blogger_id, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 					'posts_per_page' => 1,
 					'fields'         => 'ids',
 				)

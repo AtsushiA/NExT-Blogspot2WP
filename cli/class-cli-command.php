@@ -163,25 +163,42 @@ class NExT_Blogspot2WP_CLI_Command {
 
 			switch ( $result['result'] ) {
 				case 'imported':
-					WP_CLI::debug( sprintf(
-						'[%d/%d] インポート完了: "%s" (%s) → post_id=%d',
-						$i + 1, $total, $title, $date, $result['post_id']
-					) );
+					WP_CLI::debug(
+						sprintf(
+							'[%d/%d] インポート完了: "%s" (%s) → post_id=%d',
+							$i + 1,
+							$total,
+							$title,
+							$date,
+							$result['post_id']
+						)
+					);
 					break;
 				case 'updated':
-					WP_CLI::debug( sprintf(
-						'[%d/%d] 更新完了: "%s" (%s) → post_id=%d',
-						$i + 1, $total, $title, $date, $result['post_id']
-					) );
+					WP_CLI::debug(
+						sprintf(
+							'[%d/%d] 更新完了: "%s" (%s) → post_id=%d',
+							$i + 1,
+							$total,
+							$title,
+							$date,
+							$result['post_id']
+						)
+					);
 					break;
 				case 'skipped':
 					WP_CLI::debug( sprintf( '[%d/%d] スキップ: "%s"', $i + 1, $total, $title ) );
 					break;
 				case 'error':
-					WP_CLI::warning( sprintf(
-						'[%d/%d] エラー: "%s" — %s',
-						$i + 1, $total, $title, $result['message']
-					) );
+					WP_CLI::warning(
+						sprintf(
+							'[%d/%d] エラー: "%s" — %s',
+							$i + 1,
+							$total,
+							$title,
+							$result['message']
+						)
+					);
 					break;
 				case 'dry_run':
 					WP_CLI::line( $result['message'] );

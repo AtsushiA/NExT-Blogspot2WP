@@ -1,12 +1,16 @@
 <?php
 /**
- * Plugin Name: NExT Blogspot2WP
- * Plugin URI:  https://github.com/
- * Description: BlogspotブログをWordPressの投稿としてインポートするWP-CLIプラグイン
- * Version:     1.0.2
- * Author:      NExT
- * License:     GPL-2.0-or-later
- * Text Domain: next-blogspot2wp
+ * Plugin Name:       NExT Blogspot2WP
+ * Plugin URI:        https://github.com/AtsushiA/NExT-Blogspot2WP
+ * Description:       BlogspotブログをWordPressの投稿としてインポートするWP-CLIプラグイン
+ * Version:           1.0.2
+ * Requires at least: 6.0
+ * Requires PHP:      8.3
+ * Author:            NExT-Season.net
+ * Author URI:        https://next-season.net/
+ * License:           GPL-2.0-or-later
+ * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain:       next-blogspot2wp
  */
 
 defined( 'ABSPATH' ) || exit;

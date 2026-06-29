@@ -1,0 +1,18 @@
+{
+    "name": "next-blogspot2wp",
+    "version": "1.0.2",
+    "private": true,
+    "description": "BlogspotブログをWordPressの投稿としてインポートするWP-CLIプラグイン",
+    "scripts": {
+        "wp-env": "wp-env",
+        "prepare": "husky"
+    },
+    "devDependencies": {
+        "@wordpress/env": "^10.6.0",
+        "husky": "^9.1.7",
+        "lint-staged": "^15.2.11"
+    },
+    "lint-staged": {
+        "*.php": "composer run phpcs --"
+    }
+}

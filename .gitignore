@@ -18,6 +18,16 @@ vendor/
 # ビルド成果物
 *.zip
 dist/
+build/
 
 # PHP
 *.log
+
+# wp-env
+.wp-env.override.json
+debug.log
+db.sql
+
+# Test cache
+.phpunit.result.cache
+test-results/

@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<ruleset name="NExT Blogspot2WP">
+    <description>Coding standard for NExT Blogspot2WP</description>
+
+    <!-- 対象ファイル -->
+    <file>./NExT-blogspot2WP.php</file>
+    <file>./includes/</file>
+    <file>./cli/</file>
+
+    <!-- 除外 -->
+    <exclude-pattern>./vendor/*</exclude-pattern>
+    <exclude-pattern>./node_modules/*</exclude-pattern>
+    <exclude-pattern>./tests/*</exclude-pattern>
+
+    <!-- 実行オプション -->
+    <arg name="extensions" value="php"/>
+    <arg name="colors"/>
+    <arg value="ps"/>
+
+    <!-- WordPress Coding Standards -->
+    <rule ref="WordPress">
+        <!-- メインファイル名が大文字を含むため除外 -->
+        <exclude name="WordPress.Files.FileName.NotHyphenatedLowercase"/>
+        <!-- クラスファイル名はプラグイン既存の命名規則（class-blogger-feed.php 等）を尊重 -->
+        <exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
+        <!-- DOMDocument の API プロパティ（nodeType / nodeName / childNodes 等）は snake_case にできない -->
+        <exclude name="WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase"/>
+
+        <!-- ドキュメント体裁の細かいルール（WordPress-Docs 由来）は既存コードスタイルを尊重して緩和 -->
+        <exclude name="Squiz.Commenting.InlineComment.InvalidEndChar"/>
+        <exclude name="Squiz.Commenting.FunctionComment.Missing"/>
+        <exclude name="Squiz.Commenting.FunctionComment.MissingParamComment"/>
+        <exclude name="Squiz.Commenting.FunctionComment.ParamCommentFullStop"/>
+        <exclude name="Squiz.Commenting.FunctionComment.WrongStyle"/>
+        <exclude name="Squiz.Commenting.FileComment.Missing"/>
+        <exclude name="Squiz.Commenting.FileComment.MissingPackageTag"/>
+        <exclude name="Squiz.Commenting.VariableComment.Missing"/>
+        <exclude name="Generic.Commenting.DocComment.MissingShort"/>
+        <exclude name="Generic.Commenting.DocComment.ShortNotCapital"/>
+    </rule>
+
+    <!-- グローバルのプレフィックス -->
+    <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+        <properties>
+            <property name="prefixes" type="array">
+                <element value="NExT_Blogspot2WP"/>
+                <element value="NEXT_BLOGSPOT2WP"/>
+            </property>
+        </properties>
+    </rule>
+
+    <!-- PHP互換性チェック -->
+    <rule ref="PHPCompatibilityWP"/>
+    <config name="testVersion" value="8.3-"/>
+
+    <!-- テキストドメイン -->
+    <config name="text_domain" value="next-blogspot2wp"/>
+
+    <!-- 最低 WP バージョン -->
+    <config name="minimum_wp_version" value="6.0"/>
+</ruleset>

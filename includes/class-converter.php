@@ -46,7 +46,7 @@ class NExT_Blogspot2WP_Converter {
 		// エラー抑制 + HTML5 対応のため UTF-8 BOM 付き charset メタタグを付与
 		$prev_libxml_errors = libxml_use_internal_errors( true );
 		$dom->loadHTML(
-			'<?xml encoding="UTF-8">' . '<div id="blogger-content">' . $html . '</div>',
+			'<?xml encoding="UTF-8"><div id="blogger-content">' . $html . '</div>',
 			LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
 		);
 		libxml_clear_errors();
@@ -61,7 +61,7 @@ class NExT_Blogspot2WP_Converter {
 		$blocks = array();
 		foreach ( $wrapper->childNodes as $node ) {
 			$block = $this->convert_node( $node );
-			if ( $block !== '' ) {
+			if ( '' !== $block ) {
 				$blocks[] = $block;
 			}
 		}
@@ -80,15 +80,15 @@ class NExT_Blogspot2WP_Converter {
 	 * @return string
 	 */
 	private function convert_node( $node ) {
-		if ( $node->nodeType === XML_TEXT_NODE ) {
+		if ( XML_TEXT_NODE === $node->nodeType ) {
 			$text = trim( $node->nodeValue );
-			if ( $text === '' ) {
+			if ( '' === $text ) {
 				return '';
 			}
 			return $this->wrap_block( 'core/paragraph', array(), '<p>' . esc_html( $text ) . '</p>' );
 		}
 
-		if ( $node->nodeType !== XML_ELEMENT_NODE ) {
+		if ( XML_ELEMENT_NODE !== $node->nodeType ) {
 			return '';
 		}
 
@@ -148,7 +148,7 @@ class NExT_Blogspot2WP_Converter {
 			default:
 				// その他の要素は innerHTML を取得して core/html に格納
 				$inner = $this->get_inner_html( $node );
-				if ( trim( strip_tags( $inner ) ) === '' && ! preg_match( '/<img\b/i', $inner ) ) {
+				if ( trim( wp_strip_all_tags( $inner ) ) === '' && ! preg_match( '/<img\b/i', $inner ) ) {
 					return '';
 				}
 				return $this->wrap_block( 'core/html', array(), '<' . $tag . '>' . $inner . '</' . $tag . '>' );
@@ -161,7 +161,7 @@ class NExT_Blogspot2WP_Converter {
 
 	private function convert_paragraph( DOMElement $node ) {
 		$inner = $this->get_inner_html( $node );
-		if ( trim( strip_tags( $inner ) ) === '' && ! preg_match( '/<img\b/i', $inner ) ) {
+		if ( trim( wp_strip_all_tags( $inner ) ) === '' && ! preg_match( '/<img\b/i', $inner ) ) {
 			return '';
 		}
 		// img だけ含む <p> は image ブロックに変換
@@ -234,7 +234,7 @@ class NExT_Blogspot2WP_Converter {
 	private function convert_figure( DOMElement $node ) {
 		// figure 内の img を探す
 		$imgs = $node->getElementsByTagName( 'img' );
-		if ( $imgs->length === 0 ) {
+		if ( 0 === $imgs->length ) {
 			$inner = $this->get_inner_html( $node );
 			return $this->wrap_block( 'core/html', array(), '<figure>' . $inner . '</figure>' );
 		}
@@ -467,7 +467,7 @@ class NExT_Blogspot2WP_Converter {
 		$blocks = array();
 		foreach ( $node->childNodes as $child ) {
 			$block = $this->convert_node( $child );
-			if ( $block !== '' ) {
+			if ( '' !== $block ) {
 				$blocks[] = $block;
 			}
 		}
