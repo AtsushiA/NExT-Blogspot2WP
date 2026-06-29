@@ -30,8 +30,9 @@ jobs:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: root
-          # MYSQL_DATABASE は指定しない。DB は install-wp-tests.sh に作成させる
-          # （指定すると既存 DB と install-wp-tests.sh の作成処理が競合し得るため）。
+          # MySQL サービス側で DB を作成しておき、install-wp-tests.sh では DB 作成をスキップする
+          # （ubuntu ランナーに mysqladmin が無く、スクリプト側 DB 作成が失敗するのを回避）。
+          MYSQL_DATABASE: wordpress_test
         ports:
           - 3306:3306
         options: >-
@@ -61,14 +62,14 @@ jobs:
           coverage: none
       - name: Install Composer dependencies
         run: composer install --no-interaction --no-progress
-      # ubuntu-latest (24.04) には svn が含まれないため、install-wp-tests.sh の
-      # WordPress テストスイート取得（svn）用に subversion を導入する。
-      - name: Install subversion
-        run: sudo apt-get update && sudo apt-get install -y subversion
+      # ubuntu-latest (24.04) には svn / mysql-client が含まれないため導入する
+      # （install-wp-tests.sh が WordPress テストスイート取得に svn、接続確認に mysql を使う）。
+      - name: Install subversion and mysql client
+        run: sudo apt-get update && sudo apt-get install -y subversion mysql-client
       - name: Install WordPress test suite
-        # 引数: <db-name> <db-user> <db-pass> <db-host> <wp-version>
-        # 第6引数（SKIP_DB_CREATE）は渡さない＝install-wp-tests.sh に wordpress_test を作成させる。
-        run: bash bin/install-wp-tests.sh wordpress_test root root 127.0.0.1 ${{ matrix.wp }}
+        # 引数: <db-name> <db-user> <db-pass> <db-host> <wp-version> <skip-db-create>
+        # 第6引数 true: DB は MySQL サービスが作成済みのため、スクリプト側の作成をスキップする。
+        run: bash bin/install-wp-tests.sh wordpress_test root root 127.0.0.1 ${{ matrix.wp }} true
       - name: Run PHPUnit
         env:
           WP_TESTS_DIR: /tmp/wordpress-tests-lib
