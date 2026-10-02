@@ -294,9 +294,13 @@ class NExT_Blogspot2WP_Importer {
 	 * 既存投稿を検索する。
 	 * _blogger_post_id メタで検索し、見つからなければスラッグで検索する。
 	 *
-	 * @param string $blogger_id
-	 * @param string $slug
-	 * @return int|false
+	 * Blogger は日本語タイトルの記事に "blog-post.html" や "blog-post_13.html" のような
+	 * URL を年月をまたいで重複して付与するため、スラッグ一致だけでは同一記事と判定できない。
+	 * そのためスラッグでの照合は _blogger_post_id を持たない投稿（Blogger 以外で作成された投稿）に限定する。
+	 *
+	 * @param string $blogger_id Blogger 記事 ID
+	 * @param string $slug       投稿スラッグ
+	 * @return int|false 既存投稿 ID。見つからなければ false
 	 */
 	private function find_existing( $blogger_id, $slug = '' ) {
 		if ( $blogger_id ) {
@@ -317,6 +321,7 @@ class NExT_Blogspot2WP_Importer {
 		}
 
 		if ( $slug ) {
+			// 別の Blogger 記事として取り込み済みの投稿は、スラッグが同じでも対象外とする。
 			$posts = get_posts(
 				array(
 					'name'           => $slug,
@@ -324,6 +329,12 @@ class NExT_Blogspot2WP_Importer {
 					'post_status'    => 'any',
 					'posts_per_page' => 1,
 					'fields'         => 'ids',
+					'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+						array(
+							'key'     => '_blogger_post_id',
+							'compare' => 'NOT EXISTS',
+						),
+					),
 				)
 			);
 

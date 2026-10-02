@@ -1,6 +1,6 @@
 {
     "name": "next-blogspot2wp",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "private": true,
     "description": "BlogspotブログをWordPressの投稿としてインポートするWP-CLIプラグイン",
     "scripts": {
