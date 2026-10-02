@@ -274,11 +274,24 @@ $existing = get_posts([
     'meta_value' => $blogger_post_id,
     'fields'     => 'ids',
 ]);
+
+// 見つからなければ、Blogger 以外で作成された同スラッグの投稿を検索
+$existing = get_posts([
+    'name'       => $slug,
+    'post_type'  => 'post',
+    'fields'     => 'ids',
+    'meta_query' => [
+        [ 'key' => '_blogger_post_id', 'compare' => 'NOT EXISTS' ],
+    ],
+]);
 ```
 
 - `_blogger_post_id` カスタムフィールドにBloggerの記事IDを保存（`entry.id.$t` の値）
 - インポート前に上記で既存投稿を検索
-- `--force` オプション時は既存投稿を更新
+- 見つからない場合はスラッグ（`post_name`）で検索するが、対象は `_blogger_post_id` を持たない投稿（Blogger 以外で作成された投稿）に限定する
+  - Blogger は日本語タイトルの記事に `blog-post.html` / `blog-post_13.html` などの URL を年月をまたいで重複付与するため、スラッグ一致だけでは同一記事と判定できない
+  - 別の Blogger 記事とスラッグが重なった場合は新規投稿として取り込み、スラッグは WordPress が `blog-post-2` のように一意化する
+- `--force` オプション時は既存投稿を更新（スラッグが重なっただけの別記事は上書きしない）
 
 ---
 
@@ -338,5 +351,5 @@ Import complete!
 2. **レート制限**: Blogger Feedへのリクエストを連続して行わないよう、適切なインターバル（100〜500ms）を設ける。
 3. **タイムゾーン**: BloggerのFeedはサイト設定のタイムゾーンでオフセット付きで返す（例: `+09:00`）。`post_date_gmt` にはUTCに変換した値を保存する。
 4. **大量インポート**: `--limit` で小量テストしてから全件実行を推奨。`set_time_limit(0)` でタイムアウトを回避する。
-5. **スラッグ抽出**: BloggerのURLは `https://example.blogspot.com/YYYY/MM/slug.html` 形式のため、末尾の `.html` を除いたパス末尾をスラッグとして使用する。
+5. **スラッグ抽出**: BloggerのURLは `https://example.blogspot.com/YYYY/MM/slug.html` 形式のため、末尾の `.html` を除いたパス末尾をスラッグとして使用する。年月が異なる記事で同じスラッグ（`blog-post` など）が使われることがある点に注意。
 6. **画像サイズパラメータ**: Blogger画像URLのサイズ指定（`/s1600/`、`/s400/` 等）を `/s0/`（オリジナルサイズ）に変換してからダウンロードする。
